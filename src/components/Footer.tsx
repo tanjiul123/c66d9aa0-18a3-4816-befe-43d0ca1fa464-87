@@ -10,24 +10,13 @@ export const Footer = () => {
           </div>
           <div className="flex items-center gap-2">
             <span>©</span>
-            <a 
-              href="https://lazukcorp.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors font-medium"
-            >
-              LAZUK CORP
-            </a>
+            <span className="font-medium text-foreground">ভাইরাল কনটেন্ট মেকার</span>
             <span>|</span>
-            <a 
-              href="https://lazukhasan.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors font-medium"
-            >
-              LAZUK HASAN
-            </a>
+            <span>AI-Powered Bangla Content Platform</span>
           </div>
+        </div>
+        <div className="mt-4 text-xs text-muted-foreground">
+          <p>🚀 Create viral content that engages, inspires, and converts</p>
         </div>
       </div>
     </footer>

@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { CopyButton } from './CopyButton';
-import { FormattedPage } from './FormattedPage';
-import { FormattedTweet } from './FormattedTweet';
-import { BookOpen, ChevronLeft, ChevronRight, Image, Home, MessageSquare, Share2 } from 'lucide-react';
+import { FormattedContent } from './FormattedContent';
+import { 
+  BookOpen, 
+  Hash, 
+  Target, 
+  TrendingUp, 
+  MessageSquare, 
+  Share2, 
+  FileText,
+  Newspaper,
+  Download,
+  Eye
+} from 'lucide-react';
 import { ContentResult } from '@/services/geminiService';
 
 interface ContentOutputProps {
@@ -12,36 +23,20 @@ interface ContentOutputProps {
 }
 
 export const ContentOutput = ({ result }: ContentOutputProps) => {
-  const { type, title, content, imageIdeas } = result;
-  const [currentPage, setCurrentPage] = useState(0);
-
-  // For eBooks, split content by chapters
-  const pages = type === 'eBook' ? content.split('///').map(page => page.trim()).filter(page => page.length > 0) : [content];
-
-  const nextPage = () => {
-    if (currentPage < pages.length - 1) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const goToPage = (pageIndex: number) => {
-    setCurrentPage(pageIndex);
-  };
+  const { type, title, content, hashtags, keywords, engagementTips, estimatedReach } = result;
 
   const getTypeIcon = () => {
     switch (type) {
-      case 'eBook':
-        return <BookOpen className="h-6 w-6 text-primary-foreground" />;
       case 'Facebook Post':
         return <MessageSquare className="h-6 w-6 text-white" />;
       case 'Instagram Post':
         return <Share2 className="h-6 w-6 text-white" />;
+      case 'Twitter Post':
+        return <MessageSquare className="h-6 w-6 text-white" />;
+      case 'Blog Article':
+        return <FileText className="h-6 w-6 text-white" />;
+      case 'News Article':
+        return <Newspaper className="h-6 w-6 text-white" />;
       default:
         return <BookOpen className="h-6 w-6 text-primary-foreground" />;
     }
@@ -49,15 +44,31 @@ export const ContentOutput = ({ result }: ContentOutputProps) => {
 
   const getTypeLabel = () => {
     switch (type) {
-      case 'eBook':
-        return '📚 ই-বুক';
       case 'Facebook Post':
         return '📘 ফেসবুক পোস্ট';
       case 'Instagram Post':
-        return '📸 ইনস্টাগ্রাম ক্যাপশন';
+        return '📸 ইনস্টাগ্রাম পোস্ট';
+      case 'Twitter Post':
+        return '🐦 টুইটার পোস্ট';
+      case 'Blog Article':
+        return '📝 ব্লগ আর্টিকেল';
+      case 'News Article':
+        return '📰 নিউজ আর্টিকেল';
       default:
         return '📝 কনটেন্ট';
     }
+  };
+
+  const downloadContent = () => {
+    const fullContent = `${title}\n\n${content}\n\nহ্যাশট্যাগ:\n${hashtags.map(tag => `#${tag}`).join(' ')}\n\nকীওয়ার্ড:\n${keywords.join(', ')}`;
+    
+    const element = document.createElement('a');
+    const file = new Blob([fullContent], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${title.substring(0, 30)}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
@@ -78,7 +89,18 @@ export const ContentOutput = ({ result }: ContentOutputProps) => {
             <h1 className="text-2xl font-bold text-foreground leading-relaxed">{title}</h1>
           </div>
           
-          <CopyButton text={title} />
+          <div className="flex gap-3">
+            <CopyButton text={title} />
+            <Button
+              onClick={downloadContent}
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-gradient-card border-border hover:bg-gradient-primary hover:text-primary-foreground transition-all duration-300"
+            >
+              <Download className="h-4 w-4" />
+              ডাউনলোড
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -95,133 +117,116 @@ export const ContentOutput = ({ result }: ContentOutputProps) => {
               <h3 className="text-xl font-bold text-foreground">{getTypeLabel()} কনটেন্ট</h3>
             </div>
             
-            {type === 'eBook' && pages.length > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  পৃষ্ঠা {currentPage + 1} এর {pages.length}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Page Navigation for eBooks */}
-          {type === 'eBook' && pages.length > 1 && (
-            <div className="flex flex-wrap gap-2 mb-6 p-4 bg-background/50 rounded-lg">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(0)}
-                className="text-xs"
-              >
-                <Home className="h-3 w-3 mr-1" />
-                প্রথম
-              </Button>
-              {pages.map((_, index) => (
-                <Button
-                  key={index}
-                  variant={currentPage === index ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => goToPage(index)}
-                  className="text-xs"
-                >
-                  {index + 1}
-                </Button>
-              ))}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Eye className="h-4 w-4" />
+              <span>{estimatedReach}</span>
             </div>
-          )}
+          </div>
           
-          {/* Current Content */}
           <div className="bg-background/80 p-8 rounded-xl border border-border/50 backdrop-blur-sm shadow-soft min-h-[400px]">
             <div className="flex justify-between items-start mb-6">
-              {type === 'eBook' && pages.length > 1 ? (
-                <span className="text-sm font-semibold bg-gradient-primary bg-clip-text text-transparent px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
-                  অধ্যায় {currentPage + 1}
-                </span>
-              ) : (
-                <span className="text-sm font-semibold bg-gradient-primary bg-clip-text text-transparent px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
-                  {getTypeLabel()}
-                </span>
-              )}
-              <CopyButton text={pages[currentPage]} />
+              <Badge variant="default" className="bg-gradient-primary text-primary-foreground">
+                {getTypeLabel()}
+              </Badge>
+              <CopyButton text={content} />
             </div>
             
-            {type === 'eBook' ? (
-              <FormattedPage content={pages[currentPage]} />
-            ) : (
-              <FormattedTweet content={pages[currentPage]} />
-            )}
+            <FormattedContent content={content} contentType={type} />
           </div>
-
-          {/* Navigation Controls for eBooks */}
-          {type === 'eBook' && pages.length > 1 && (
-            <div className="flex justify-between items-center mt-6">
-              <Button
-                variant="outline"
-                onClick={prevPage}
-                disabled={currentPage === 0}
-                className="flex items-center gap-2"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                পূর্ববর্তী
-              </Button>
-
-              <div className="flex gap-2">
-                <CopyButton 
-                  text={pages.join('\n\n--- নতুন অধ্যায় ---\n\n')} 
-                  label="সব অধ্যায় কপি করুন"
-                />
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={nextPage}
-                disabled={currentPage === pages.length - 1}
-                className="flex items-center gap-2"
-              >
-                পরবর্তী
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {/* Copy all content for non-eBook types */}
-          {type !== 'eBook' && (
-            <div className="mt-6 pt-6 border-t border-border/50">
-              <CopyButton 
-                text={content} 
-                label="সম্পূর্ণ কনটেন্ট কপি করুন"
-              />
-            </div>
-          )}
         </div>
       </Card>
 
-      {/* Image Ideas */}
+      {/* Hashtags & Keywords */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Hashtags */}
+        <Card className="p-6 bg-gradient-card border-border shadow-card hover:shadow-elegant transition-all duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-subtle opacity-30 pointer-events-none"></div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-accent rounded-lg shadow-soft">
+                <Hash className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground"># হ্যাশট্যাগ</h3>
+            </div>
+            
+            <div className="bg-background/80 p-4 rounded-lg mb-4 border border-border/50 backdrop-blur-sm">
+              <div className="flex flex-wrap gap-2">
+                {hashtags.map((tag, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => navigator.clipboard.writeText(`#${tag}`)}
+                  >
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            
+            <CopyButton text={hashtags.map(tag => `#${tag}`).join(' ')} label="সব হ্যাশট্যাগ কপি" />
+          </div>
+        </Card>
+
+        {/* Keywords */}
+        <Card className="p-6 bg-gradient-card border-border shadow-card hover:shadow-elegant transition-all duration-300 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-subtle opacity-30 pointer-events-none"></div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-primary rounded-lg shadow-soft">
+                <Target className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground">🎯 কীওয়ার্ড</h3>
+            </div>
+            
+            <div className="bg-background/80 p-4 rounded-lg mb-4 border border-border/50 backdrop-blur-sm">
+              <div className="flex flex-wrap gap-2">
+                {keywords.map((keyword, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+                    onClick={() => navigator.clipboard.writeText(keyword)}
+                  >
+                    {keyword}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            
+            <CopyButton text={keywords.join(', ')} label="সব কীওয়ার্ড কপি" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Engagement Tips */}
       <Card className="p-8 bg-gradient-card border-border shadow-card hover:shadow-elegant transition-all duration-300 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-subtle opacity-30 pointer-events-none"></div>
         
         <div className="relative">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-gradient-accent rounded-xl shadow-soft">
-              <Image className="h-6 w-6 text-white" />
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-foreground">🖼️ ইমেজ আইডিয়া</h3>
+            <h3 className="text-xl font-bold text-foreground">🚀 এনগেজমেন্ট বাড়ানোর টিপস</h3>
           </div>
           
           <div className="bg-background/80 p-6 rounded-xl mb-6 border border-border/50 backdrop-blur-sm shadow-soft">
             <div className="space-y-4">
-              {imageIdeas.map((idea, index) => (
+              {engagementTips.map((tip, index) => (
                 <div key={index} className="flex items-start gap-4 p-3 rounded-lg hover:bg-background/50 transition-colors duration-200">
-                  <div className="p-1.5 bg-gradient-primary rounded-full mt-1">
+                  <div className="p-1.5 bg-gradient-primary rounded-full mt-1 flex-shrink-0">
                     <span className="block w-2 h-2 bg-primary-foreground rounded-full"></span>
                   </div>
-                  <span className="text-base leading-relaxed text-foreground/90">{idea}</span>
+                  <span className="text-base leading-relaxed text-foreground/90">{tip}</span>
                 </div>
               ))}
             </div>
           </div>
           
-          <CopyButton text={imageIdeas.join('\n')} label="সব আইডিয়া কপি করুন" />
+          <CopyButton text={engagementTips.join('\n')} label="সব টিপস কপি করুন" />
         </div>
       </Card>
     </div>

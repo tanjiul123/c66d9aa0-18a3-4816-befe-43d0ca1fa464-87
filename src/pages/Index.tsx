@@ -3,11 +3,11 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { TopicInput } from '@/components/TopicInput';
 import { ContentOutput } from '@/components/ContentOutput';
-import { GeminiService, type ContentResult, type ContentType } from '@/services/geminiService';
+import { GeminiService, type ContentResult, type ContentRequest } from '@/services/geminiService';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Key, AlertCircle } from 'lucide-react';
+import { Key, AlertCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -21,27 +21,51 @@ const Index = () => {
     if (apiKey.trim()) {
       geminiService.setApiKey(apiKey.trim());
       setIsApiKeySet(true);
-      toast.success('API Key সেট হয়েছে!');
+      toast.success('API Key সেট হয়েছে! এখন আপনি ভাইরাল কনটেন্ট তৈরি করতে পারবেন।');
     } else {
       toast.error('একটি বৈধ API Key প্রবেশ করান');
     }
   };
 
-  const handleGenerateContent = async (topic: string, contentType: ContentType) => {
+  const handleGenerateContent = async (request: ContentRequest) => {
     setIsLoading(true);
     setResult(null);
     
     try {
-      const contentResult = await geminiService.generateContent(topic, contentType);
+      const contentResult = await geminiService.generateContent(request);
       setResult(contentResult);
-      const successMessage = contentType === 'eBook' ? 'ই-বুক তৈরি হয়েছে!' : 
-                            contentType === 'Facebook Post' ? 'ফেসবুক পোস্ট তৈরি হয়েছে!' :
-                            'ইনস্টাগ্রাম ক্যাপশন তৈরি হয়েছে!';
+      
+      const successMessage = request.contentType === 'Blog Article' ? 'ব্লগ আর্টিকেল তৈরি হয়েছে!' : 
+                            request.contentType === 'Facebook Post' ? 'ফেসবুক পোস্ট তৈরি হয়েছে!' :
+                            request.contentType === 'Instagram Post' ? 'ইনস্টাগ্রাম পোস্ট তৈরি হয়েছে!' :
+                            request.contentType === 'Twitter Post' ? 'টুইটার পোস্ট তৈরি হয়েছে!' :
+                            'নিউজ আর্টিকেল তৈরি হয়েছে!';
+      
       toast.success(successMessage);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'কিছু সমস্যা হয়েছে');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGetTrendingTopics = async (): Promise<string[]> => {
+    try {
+      return await geminiService.getTrendingTopics();
+    } catch (error) {
+      console.error('Error getting trending topics:', error);
+      return [
+        'ডিজিটাল মার্কেটিং',
+        'অনলাইন আয়',
+        'স্বাস্থ্য টিপস',
+        'প্রযুক্তি নিউজ',
+        'ব্যবসায়িক কৌশল',
+        'সোশ্যাল মিডিয়া',
+        'ক্যারিয়ার গাইড',
+        'লাইফস্টাইল',
+        'শিক্ষা',
+        'বিনোদন'
+      ];
     }
   };
 
@@ -52,7 +76,7 @@ const Index = () => {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-primary opacity-5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-social opacity-5 rounded-full blur-3xl pointer-events-none"></div>
       
-      <div className="container mx-auto px-6 py-12 max-w-5xl relative z-10">
+      <div className="container mx-auto px-6 py-12 max-w-6xl relative z-10">
         <Header />
 
         {!isApiKeySet ? (
@@ -75,7 +99,7 @@ const Index = () => {
                   <div>
                     <p className="font-semibold text-foreground mb-2">API Key প্রয়োজন</p>
                     <p className="text-foreground/80 leading-relaxed">
-                      Gemini API ব্যবহার করতে আপনার API Key প্রয়োজন। 
+                      ভাইরাল কনটেন্ট তৈরি করতে Gemini API Key প্রয়োজন। 
                       <a 
                         href="https://makersuite.google.com/app/apikey" 
                         target="_blank" 
@@ -103,14 +127,19 @@ const Index = () => {
                   size="lg"
                   className="bg-gradient-primary hover:shadow-glow transition-all duration-300 px-6 h-12 font-semibold disabled:opacity-50"
                 >
-                  সেট করুন
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  শুরু করুন
                 </Button>
               </div>
             </div>
           </Card>
         ) : (
           <>
-            <TopicInput onGenerate={handleGenerateContent} isLoading={isLoading} />
+            <TopicInput 
+              onGenerate={handleGenerateContent} 
+              isLoading={isLoading}
+              onGetTrendingTopics={handleGetTrendingTopics}
+            />
             
             {result && (
               <div className="mt-12 animate-fade-in">
