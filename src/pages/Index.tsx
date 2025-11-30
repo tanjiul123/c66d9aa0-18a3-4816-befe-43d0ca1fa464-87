@@ -21,9 +21,9 @@ const Index = () => {
     if (apiKey.trim()) {
       geminiService.setApiKey(apiKey.trim());
       setIsApiKeySet(true);
-      toast.success('API Key সেট হয়েছে! এখন আপনি ভাইরাল কনটেন্ট তৈরি করতে পারবেন।');
+      toast.success('API Key set successfully! You can now generate content.');
     } else {
-      toast.error('একটি বৈধ API Key প্রবেশ করান');
+      toast.error('Please enter a valid API Key');
     }
   };
 
@@ -35,36 +35,34 @@ const Index = () => {
       const contentResult = await geminiService.generateContent(request);
       setResult(contentResult);
       
-      const successMessage = request.contentType === 'Blog Article' ? 'ব্লগ আর্টিকেল তৈরি হয়েছে!' : 
-                            request.contentType === 'Facebook Post' ? 'ফেসবুক পোস্ট তৈরি হয়েছে!' :
-                            request.contentType === 'Instagram Post' ? 'ইনস্টাগ্রাম পোস্ট তৈরি হয়েছে!' :
-                            request.contentType === 'Twitter Post' ? 'টুইটার পোস্ট তৈরি হয়েছে!' :
-                            'নিউজ আর্টিকেল তৈরি হয়েছে!';
+      const successMessage = request.contentType === 'Project Ideas' ? 'Project ideas generated successfully!' : 
+                            request.contentType === 'Project Report' ? 'Project report generated successfully!' :
+                            'Assignment solution generated successfully!';
       
       toast.success(successMessage);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'কিছু সমস্যা হয়েছে');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGetTrendingTopics = async (): Promise<string[]> => {
+  const handleGetSuggestedTopics = async (): Promise<string[]> => {
     try {
-      return await geminiService.getTrendingTopics();
+      return await geminiService.getSuggestedTopics();
     } catch (error) {
-      console.error('Error getting trending topics:', error);
+      console.error('Error getting suggested topics:', error);
       return [
-        'ডিজিটাল মার্কেটিং',
-        'অনলাইন আয়',
-        'স্বাস্থ্য টিপস',
-        'প্রযুক্তি নিউজ',
-        'ব্যবসায়িক কৌশল',
-        'সোশ্যাল মিডিয়া',
-        'ক্যারিয়ার গাইড',
-        'লাইফস্টাইল',
-        'শিক্ষা',
-        'বিনোদন'
+        'Machine Learning Applications',
+        'Web Development Projects',
+        'Data Science Analysis',
+        'Mobile App Development',
+        'IoT Smart Systems',
+        'Blockchain Technology',
+        'Cloud Computing Solutions',
+        'AI & Deep Learning',
+        'Cybersecurity Analysis',
+        'E-commerce Platform'
       ];
     }
   };
@@ -72,9 +70,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background font-hind relative overflow-hidden">
       {/* Background gradient effects */}
-      <div className="absolute inset-0 bg-gradient-subtle opacity-20 pointer-events-none"></div>
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-primary opacity-5 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-social opacity-5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-subtle opacity-30 pointer-events-none"></div>
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-primary opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-accent opacity-10 rounded-full blur-3xl pointer-events-none"></div>
       
       <div className="container mx-auto px-6 py-12 max-w-6xl relative z-10">
         <Header />
@@ -88,7 +86,7 @@ const Index = () => {
                 <div className="p-3 bg-gradient-accent rounded-xl shadow-soft">
                   <Key className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Gemini API Key সেটআপ</h3>
+                <h3 className="text-xl font-bold text-foreground">Gemini API Key Setup</h3>
               </div>
               
               <div className="bg-gradient-accent/10 border border-accent/30 rounded-xl p-6 mb-6 backdrop-blur-sm">
@@ -97,17 +95,17 @@ const Index = () => {
                     <AlertCircle className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground mb-2">API Key প্রয়োজন</p>
+                    <p className="font-semibold text-foreground mb-2">API Key Required</p>
                     <p className="text-foreground/80 leading-relaxed">
-                      ভাইরাল কনটেন্ট তৈরি করতে Gemini API Key প্রয়োজন। 
+                      To generate content, you need a Gemini API Key. 
                       <a 
                         href="https://makersuite.google.com/app/apikey" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-primary hover:text-primary-hover underline font-medium ml-1 transition-colors"
                       >
-                        এখানে ক্লিক করে
-                      </a> API Key নিন।
+                        Click here
+                      </a> to get your API Key.
                     </p>
                   </div>
                 </div>
@@ -116,7 +114,7 @@ const Index = () => {
               <div className="flex gap-3">
                 <Input
                   type="password"
-                  placeholder="আপনার Gemini API Key এখানে পেস্ট করুন..."
+                  placeholder="Paste your Gemini API Key here..."
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   className="flex-1 h-12 bg-background/80 border-border focus:ring-primary focus:border-primary transition-all duration-200 text-base backdrop-blur-sm"
@@ -128,7 +126,7 @@ const Index = () => {
                   className="bg-gradient-primary hover:shadow-glow transition-all duration-300 px-6 h-12 font-semibold disabled:opacity-50"
                 >
                   <Sparkles className="h-5 w-5 mr-2" />
-                  শুরু করুন
+                  Get Started
                 </Button>
               </div>
             </div>
@@ -138,7 +136,7 @@ const Index = () => {
             <TopicInput 
               onGenerate={handleGenerateContent} 
               isLoading={isLoading}
-              onGetTrendingTopics={handleGetTrendingTopics}
+              onGetSuggestedTopics={handleGetSuggestedTopics}
             />
             
             {result && (
