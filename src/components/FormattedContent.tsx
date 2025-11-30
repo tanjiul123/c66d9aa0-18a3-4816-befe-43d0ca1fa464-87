@@ -62,34 +62,20 @@ export const FormattedContent = ({ content, contentType, className = '' }: Forma
         );
       }
       
-      // Special formatting for social media posts
-      if (contentType === 'Facebook Post' || contentType === 'Instagram Post' || contentType === 'Twitter Post') {
-        // Highlight hashtags
-        const withHashtags = formattedLine.replace(/#(\w+)/g, '<span class="text-primary font-semibold">#$1</span>');
-        
-        return (
-          <div 
-            key={index} 
-            className={`
-              ${isBulletPoint ? 'ml-4' : ''} 
-              ${isNumberedList ? 'ml-4' : ''}
-              ${index > 0 ? 'mt-3' : ''} 
-              leading-relaxed text-foreground/90 text-lg
-            `}
-            dangerouslySetInnerHTML={{ __html: withHashtags }}
-          />
-        );
-      }
+      // Highlight hashtags for all content types
+      const withHashtags = formattedLine.replace(/#(\w+)/g, '<span class="text-primary font-semibold">#$1</span>');
       
       return (
-        <div key={index} className={`
-          ${isBulletPoint ? 'ml-4' : ''} 
-          ${isNumberedList ? 'ml-4' : ''}
-          ${index > 0 ? 'mt-3' : ''} 
-          leading-relaxed text-foreground/90
-        `}>
-          {formattedLine}
-        </div>
+        <div 
+          key={index} 
+          className={`
+            ${isBulletPoint ? 'ml-4' : ''} 
+            ${isNumberedList ? 'ml-4' : ''}
+            ${index > 0 ? 'mt-3' : ''} 
+            leading-relaxed text-foreground/90
+          `}
+          dangerouslySetInnerHTML={{ __html: withHashtags }}
+        />
       );
     });
   };

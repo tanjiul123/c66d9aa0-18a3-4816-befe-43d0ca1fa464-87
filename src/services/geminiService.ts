@@ -1,203 +1,192 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-export type ContentType = 'Facebook Post' | 'Instagram Post' | 'Twitter Post' | 'Blog Article' | 'News Article';
-export type ContentTone = 'Professional' | 'Friendly' | 'Humorous' | 'Motivational' | 'Storytelling';
-export type AudienceType = 'General Public' | 'Students' | 'Professionals' | 'Entrepreneurs' | 'Youth';
+export type ContentType = 'Project Ideas' | 'Project Report' | 'Assignment Solution';
+export type ContentTone = 'Professional' | 'Academic' | 'Creative' | 'Technical' | 'Detailed';
+export type AudienceType = 'Students' | 'Researchers' | 'Professionals' | 'Beginners' | 'Advanced';
 
 export interface ContentRequest {
   topic: string;
   contentType: ContentType;
   tone: ContentTone;
   audience: AudienceType;
-  includeHashtags?: boolean;
-  includeEmojis?: boolean;
-  wordCount?: 'Short' | 'Medium' | 'Long';
+  additionalDetails?: string;
 }
 
 export interface ContentResult {
   type: ContentType;
   title: string;
   content: string;
-  hashtags: string[];
+  sections: string[];
   keywords: string[];
-  engagementTips: string[];
-  estimatedReach: string;
+  tips: string[];
+  estimatedLength: string;
 }
 
-const VIRAL_CONTENT_PROMPTS = {
-  'Facebook Post': `
-আপনি একজন ভাইরাল কনটেন্ট ক্রিয়েটর এবং সোশ্যাল মিডিয়া এক্সপার্ট। আপনার কাজ হল এমন ফেসবুক পোস্ট তৈরি করা যা মানুষ শেয়ার করতে বাধ্য হবে।
+const CONTENT_PROMPTS = {
+  'Project Ideas': `
+You are a creative project idea generator and innovation consultant.
 
-টপিক: "{{TOPIC}}"
-টোন: {{TONE}}
-অডিয়েন্স: {{AUDIENCE}}
+Topic: "{{TOPIC}}"
+Tone: {{TONE}}
+Audience: {{AUDIENCE}}
+Additional Details: {{DETAILS}}
 
-নিম্নলিখিত কাঠামো অনুসরণ করুন:
+Generate 5-7 unique and innovative project ideas related to the topic.
 
-🎯 **হুক লাইন** (প্রথম ১-২ লাইন):
-- চোখ ধাঁধানো, কৌতূহল সৃষ্টিকারী
-- প্রশ্ন বা চমকপ্রদ তথ্য দিয়ে শুরু
-- স্ক্রল থামানোর মতো শক্তিশালী
+Structure:
 
-📝 **মূল কনটেন্ট**:
-- গল্পের ছলে তথ্য উপস্থাপনা
-- ব্যক্তিগত অভিজ্ঞতা বা উদাহরণ
-- মূল্যবান টিপস বা জ্ঞান
-- আবেগের সাথে যুক্ত করা
+🎯 **Introduction**:
+- Brief overview of the topic domain
+- Why these projects are relevant and valuable
 
-🎬 **কল টু অ্যাকশন**:
-- কমেন্ট, শেয়ার বা রিঅ্যাক্ট করতে উৎসাহ
-- প্রশ্ন করে এনগেজমেন্ট বাড়ানো
+💡 **Project Ideas** (5-7 ideas):
+For each project idea include:
+- Project Name (creative and memorable)
+- Description (2-3 sentences)
+- Key Features (3-4 bullet points)
+- Technology Stack suggestion
+- Difficulty Level (Beginner/Intermediate/Advanced)
+- Estimated Timeline
+- Impact & Value
 
-বিশেষ নির্দেশনা:
-- ১০০% বাংলায় লিখুন (ইংরেজি শব্দ এড়িয়ে চলুন)
-- ইমোজি ব্যবহার করুন কিন্তু অতিরিক্ত নয়
-- ভাইরাল হওয়ার মতো শেয়ারেবল কনটেন্ট তৈরি করুন
-- সাংস্কৃতিকভাবে প্রাসঙ্গিক এবং আবেগময় হোন
+🚀 **Implementation Tips**:
+- Getting started advice
+- Resources needed
+- Common challenges to avoid
+
+Special Instructions:
+- Make ideas innovative and practical
+- Consider current trends and technologies
+- Ensure feasibility for the target audience
+- Include real-world applications
 `,
 
-  'Instagram Post': `
-আপনি একজন ইনস্টাগ্রাম কনটেন্ট স্পেশালিস্ট যিনি ভাইরাল ক্যাপশন তৈরি করেন।
+  'Project Report': `
+You are an expert academic writer and project documentation specialist.
 
-টপিক: "{{TOPIC}}"
-টোন: {{TONE}}
-অডিয়েন্স: {{AUDIENCE}}
+Topic: "{{TOPIC}}"
+Tone: {{TONE}}
+Audience: {{AUDIENCE}}
+Additional Details: {{DETAILS}}
 
-ইনস্টাগ্রাম ক্যাপশন কাঠামো:
+Create a comprehensive project report with the following structure:
 
-🌟 **আই-ক্যাচিং ওপেনার**:
-- প্রথম লাইনেই মনোযোগ আকর্ষণ
-- ইমোজি দিয়ে ভিজুয়াল আবেদন
+📋 **Title & Abstract**:
+- Compelling project title
+- Executive summary (150-200 words)
+- Key objectives and outcomes
 
-📸 **স্টোরি টেলিং**:
-- ছোট, আকর্ষণীয় গল্প
-- ব্যক্তিগত অভিজ্ঞতা শেয়ার
-- রিলেটেবল মুহূর্ত
+🎯 **Introduction**:
+- Background and context
+- Problem statement
+- Project objectives
+- Scope and limitations
 
-💡 **ভ্যালু প্রোভাইড**:
-- কার্যকর টিপস
-- অনুপ্রেরণামূলক বার্তা
-- শিক্ষণীয় তথ্য
+🔍 **Literature Review / Background Research**:
+- Current state of the field
+- Related work and existing solutions
+- Research gaps identified
 
-🔥 **এনগেজমেন্ট বুস্টার**:
-- প্রশ্ন করুন
-- মতামত চান
-- শেয়ার করতে উৎসাহ দিন
+⚙️ **Methodology**:
+- Approach and framework
+- Tools and technologies used
+- Implementation process
+- System architecture/design
 
-বিশেষ নির্দেশনা:
-- ইনস্টাগ্রামের জন্য অপ্টিমাইজড
-- ভিজুয়াল কনটেন্টের সাথে মানানসই
-- হ্যাশট্যাগ-ফ্রেন্ডলি
-- ইমোজি স্ট্র্যাটেজিক্যালি ব্যবহার করুন
+📊 **Results & Analysis**:
+- Key findings and outcomes
+- Data analysis and interpretation
+- Performance metrics
+- Comparative analysis
+
+💡 **Discussion**:
+- Interpretation of results
+- Implications and significance
+- Challenges faced and solutions
+- Future improvements
+
+🎬 **Conclusion**:
+- Summary of achievements
+- Contribution to the field
+- Recommendations
+- Future scope
+
+📚 **References & Resources**:
+- Suggested reading materials
+- Tools and frameworks
+
+Special Instructions:
+- Use formal academic language
+- Include specific details and examples
+- Make it publication-ready
+- Ensure logical flow between sections
 `,
 
-  'Twitter Post': `
-আপনি একজন টুইটার/এক্স কনটেন্ট এক্সপার্ট যিনি ভাইরাল থ্রেড এবং টুইট তৈরি করেন।
+  'Assignment Solution': `
+You are an expert educator and assignment solution provider.
 
-টপিক: "{{TOPIC}}"
-টোন: {{TONE}}
-অডিয়েন্স: {{AUDIENCE}}
+Topic: "{{TOPIC}}"
+Tone: {{TONE}}
+Audience: {{AUDIENCE}}
+Additional Details: {{DETAILS}}
 
-টুইটার কনটেন্ট ফরম্যাট:
+Create a comprehensive assignment solution with deep explanations:
 
-🧵 **থ্রেড স্ট্রাকচার** (যদি দীর্ঘ কনটেন্ট হয়):
-1/ হুক টুইট - সবচেয়ে আকর্ষণীয়
-2/ সমস্যা/প্রশ্ন উপস্থাপনা
-3-5/ সমাধান/তথ্য/গল্প
-শেষ/ সারাংশ + CTA
+📝 **Assignment Overview**:
+- Understanding the question/problem
+- Key concepts involved
+- Learning objectives
 
-⚡ **সিঙ্গেল টুইট** (যদি ছোট কনটেন্ট হয়):
-- ২৮০ ক্যারেক্টারের মধ্যে
-- পাঞ্চি এবং মেমোরেবল
-- রিটুইট করার মতো
+💡 **Theoretical Foundation**:
+- Core concepts explanation
+- Relevant theories and principles
+- Background knowledge needed
 
-বিশেষ নির্দেশনা:
-- দ্রুত পড়া যায় এমন
-- শেয়ার করার মতো মূল্যবান
-- ট্রেন্ডিং টপিকের সাথে সংযুক্ত
-- বাংলা হ্যাশট্যাগ ব্যবহার করুন
-`,
+🔬 **Step-by-Step Solution**:
+- Break down the problem
+- Detailed solution process
+- Each step explained thoroughly
+- Formulas/algorithms used
+- Code snippets (if applicable)
+- Diagrams and examples
 
-  'Blog Article': `
-আপনি একজন প্রফেশনাল বাংলা ব্লগ রাইটার এবং কনটেন্ট স্ট্র্যাটেজিস্ট।
+📊 **Analysis & Verification**:
+- Result validation
+- Alternative approaches
+- Comparison of methods
+- Error analysis
 
-টপিক: "{{TOPIC}}"
-টোন: {{TONE}}
-অডিয়েন্স: {{AUDIENCE}}
+🎯 **Key Takeaways**:
+- Important points to remember
+- Common mistakes to avoid
+- Best practices
+- Related concepts
 
-ব্লগ আর্টিকেল কাঠামো:
+📚 **Practice & Extension**:
+- Similar problems to practice
+- Advanced variations
+- Real-world applications
+- Further study resources
 
-📝 **আকর্ষণীয় শিরোনাম**:
-- SEO অপ্টিমাইজড
-- ক্লিক করতে বাধ্য করে
-- কৌতূহল সৃষ্টি করে
+🌟 **Study Tips**:
+- How to master this topic
+- Effective learning strategies
+- Resources for deeper understanding
 
-🎯 **ভূমিকা** (১৫০-২০০ শব্দ):
-- সমস্যা চিহ্নিতকরণ
-- পাঠকের সাথে সংযোগ
-- আর্টিকেলের রোডম্যাপ
-
-📚 **মূল অংশ** (৮-১০টি সেকশন):
-- প্রতিটি সেকশনে H2/H3 হেডিং
-- বাস্তব উদাহরণ এবং কেস স্টাডি
-- অ্যাকশনেবল টিপস
-- ডেটা এবং পরিসংখ্যান
-
-🎬 **উপসংহার**:
-- মূল পয়েন্টগুলির সারাংশ
-- পরবর্তী পদক্ষেপের নির্দেশনা
-- কল টু অ্যাকশন
-
-বিশেষ নির্দেশনা:
-- ১৫০০-২৫০০ শব্দের মধ্যে
-- SEO কীওয়ার্ড প্রাকৃতিকভাবে ব্যবহার
-- পড়তে সহজ এবং স্ক্যানেবল
-- গবেষণাভিত্তিক এবং তথ্যবহুল
-`,
-
-  'News Article': `
-আপনি একজন অভিজ্ঞ সংবাদ সম্পাদক এবং জার্নালিস্ট।
-
-টপিক: "{{TOPIC}}"
-টোন: {{TONE}}
-অডিয়েন্স: {{AUDIENCE}}
-
-সংবাদ আর্টিকেল কাঠামো:
-
-📰 **হেডলাইন**:
-- তাৎক্ষণিক এবং আকর্ষণীয়
-- মূল তথ্য প্রকাশ করে
-- ক্লিকবেইট নয়, তথ্যবহুল
-
-🔥 **লিড প্যারাগ্রাফ**:
-- ৫W১H (কী, কে, কখন, কোথায়, কেন, কীভাবে)
-- সবচেয়ে গুরুত্বপূর্ণ তথ্য প্রথমে
-- ৫০-৭৫ শব্দের মধ্যে
-
-📊 **বডি প্যারাগ্রাফ**:
-- তথ্যের গুরুত্ব অনুযায়ী সাজানো
-- উদ্ধৃতি এবং বিবৃতি
-- প্রসঙ্গ এবং পটভূমি
-
-🎯 **সমাপনী**:
-- ভবিষ্যৎ প্রভাব
-- পরবর্তী পদক্ষেপ
-- যোগাযোগের তথ্য (যদি প্রয়োজন হয়)
-
-বিশেষ নির্দেশনা:
-- নিরপেক্ষ এবং তথ্যভিত্তিক
-- দ্রুত পড়া যায়
-- বিশ্বাসযোগ্য সূত্র উল্লেখ
-- সময়োপযোগী এবং প্রাসঙ্গিক
+Special Instructions:
+- Explain every step clearly
+- Use examples and analogies
+- Include visual descriptions
+- Make it easy to understand
+- Provide complete, detailed solutions
+- Focus on learning, not just answers
 `
 };
 
-const HASHTAG_PROMPTS = {
-  'Facebook Post': 'বাংলা এবং ইংরেজি মিশ্রিত ৮-১০টি হ্যাশট্যাগ তৈরি করুন যা ফেসবুকে ভাইরাল হতে পারে',
-  'Instagram Post': 'ইনস্টাগ্রামের জন্য ১৫-২০টি ট্রেন্ডিং হ্যাশট্যাগ (বাংলা + ইংরেজি) তৈরি করুন',
-  'Twitter Post': 'টুইটারের জন্য ৫-৮টি কার্যকর হ্যাশট্যাগ তৈরি করুন',
-  'Blog Article': 'SEO অপ্টিমাইজড ১০-১৫টি কীওয়ার্ড এবং হ্যাশট্যাগ তৈরি করুন',
-  'News Article': 'সংবাদের জন্য প্রাসঙ্গিক ৫-৮টি হ্যাশট্যাগ তৈরি করুন'
+const KEYWORD_PROMPTS = {
+  'Project Ideas': 'Generate 10-15 relevant keywords and trending tags for these project ideas',
+  'Project Report': 'Generate 10-15 academic keywords and research tags for this project report',
+  'Assignment Solution': 'Generate 10-15 study keywords and concept tags for this assignment topic'
 };
 
 export class GeminiService {
@@ -222,7 +211,6 @@ export class GeminiService {
 
     const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    // Generate main content
     const contentPrompt = this.buildContentPrompt(request);
     
     try {
@@ -230,117 +218,116 @@ export class GeminiService {
       const contentResponse = await contentResult.response;
       const contentText = contentResponse.text();
 
-      // Generate hashtags separately
-      const hashtagPrompt = this.buildHashtagPrompt(request);
-      const hashtagResult = await model.generateContent(hashtagPrompt);
-      const hashtagResponse = await hashtagResult.response;
-      const hashtagText = hashtagResponse.text();
+      const keywordPrompt = this.buildKeywordPrompt(request);
+      const keywordResult = await model.generateContent(keywordPrompt);
+      const keywordResponse = await keywordResult.response;
+      const keywordText = keywordResponse.text();
 
-      return this.parseResponse(contentText, hashtagText, request);
+      return this.parseResponse(contentText, keywordText, request);
     } catch (error) {
       console.error('Error generating content:', error);
-      throw new Error('কনটেন্ট তৈরি করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      throw new Error('Failed to generate content. Please try again.');
     }
   }
 
   private buildContentPrompt(request: ContentRequest): string {
-    const basePrompt = VIRAL_CONTENT_PROMPTS[request.contentType];
+    const basePrompt = CONTENT_PROMPTS[request.contentType];
     
     return basePrompt
       .replace('{{TOPIC}}', request.topic)
       .replace('{{TONE}}', request.tone)
-      .replace('{{AUDIENCE}}', request.audience) + `
+      .replace('{{AUDIENCE}}', request.audience)
+      .replace('{{DETAILS}}', request.additionalDetails || 'No additional details provided') + `
 
-নিম্নোক্ত ফরম্যাটে আউটপুট দিন:
+Output in the following format:
 
 CONTENT_TITLE_START
-[এখানে কনটেন্টের শিরোনাম লিখুন]
+[Write the title here]
 CONTENT_TITLE_END
 
 CONTENT_BODY_START
-[এখানে মূল কনটেন্ট লিখুন]
+[Write the main content here with all sections]
 CONTENT_BODY_END
 
-ENGAGEMENT_TIPS_START
-[এখানে ৫টি এনগেজমেন্ট বাড়ানোর টিপস দিন]
-ENGAGEMENT_TIPS_END
+SECTIONS_START
+[List main section headings, one per line]
+SECTIONS_END
 
-ESTIMATED_REACH_START
-[এই কনটেন্টের সম্ভাব্য রিচ এবং এনগেজমেন্ট প্রেডিকশন]
-ESTIMATED_REACH_END`;
+TIPS_START
+[Provide 5-7 helpful tips related to this content]
+TIPS_END
+
+ESTIMATED_LENGTH_START
+[Estimated word count and reading time]
+ESTIMATED_LENGTH_END`;
   }
 
-  private buildHashtagPrompt(request: ContentRequest): string {
-    return `${HASHTAG_PROMPTS[request.contentType]} টপিক: "${request.topic}" এর জন্য।
+  private buildKeywordPrompt(request: ContentRequest): string {
+    return `${KEYWORD_PROMPTS[request.contentType]} for topic: "${request.topic}"
 
-নিম্নোক্ত ফরম্যাটে আউটপুট দিন:
-
-HASHTAGS_START
-[এখানে হ্যাশট্যাগগুলো লিখুন, প্রতিটি নতুন লাইনে]
-HASHTAGS_END
+Output in the following format:
 
 KEYWORDS_START
-[এখানে SEO কীওয়ার্ডগুলো লিখুন, প্রতিটি নতুন লাইনে]
+[Write keywords here, one per line]
 KEYWORDS_END`;
   }
 
-  private parseResponse(contentText: string, hashtagText: string, request: ContentRequest): ContentResult {
+  private parseResponse(contentText: string, keywordText: string, request: ContentRequest): ContentResult {
     try {
-      // Extract title
       const titleMatch = contentText.match(/CONTENT_TITLE_START\s*([\s\S]*?)\s*CONTENT_TITLE_END/);
-      const title = titleMatch ? titleMatch[1].trim() : `${request.contentType} শিরোনাম`;
+      const title = titleMatch ? titleMatch[1].trim() : `${request.contentType} Title`;
 
-      // Extract content
       const contentMatch = contentText.match(/CONTENT_BODY_START\s*([\s\S]*?)\s*CONTENT_BODY_END/);
-      const content = contentMatch ? contentMatch[1].trim() : 'কনটেন্ট তৈরি করতে সমস্যা হয়েছে';
+      const content = contentMatch ? contentMatch[1].trim() : 'Failed to generate content';
 
-      // Extract engagement tips
-      const tipsMatch = contentText.match(/ENGAGEMENT_TIPS_START\s*([\s\S]*?)\s*ENGAGEMENT_TIPS_END/);
+      const sectionsMatch = contentText.match(/SECTIONS_START\s*([\s\S]*?)\s*SECTIONS_END/);
+      const sectionsText = sectionsMatch ? sectionsMatch[1].trim() : '';
+      const sections = sectionsText.split('\n').map(s => s.trim().replace(/^[-•]\s*/, '')).filter(s => s.length > 0);
+
+      const tipsMatch = contentText.match(/TIPS_START\s*([\s\S]*?)\s*TIPS_END/);
       const tipsText = tipsMatch ? tipsMatch[1].trim() : '';
-      const engagementTips = tipsText.split('\n').map(tip => tip.trim().replace(/^[-•]\s*/, '')).filter(tip => tip.length > 0);
+      const tips = tipsText.split('\n').map(tip => tip.trim().replace(/^[-•]\s*/, '')).filter(tip => tip.length > 0);
 
-      // Extract estimated reach
-      const reachMatch = contentText.match(/ESTIMATED_REACH_START\s*([\s\S]*?)\s*ESTIMATED_REACH_END/);
-      const estimatedReach = reachMatch ? reachMatch[1].trim() : 'মাঝারি থেকে উচ্চ রিচ প্রত্যাশিত';
+      const lengthMatch = contentText.match(/ESTIMATED_LENGTH_START\s*([\s\S]*?)\s*ESTIMATED_LENGTH_END/);
+      const estimatedLength = lengthMatch ? lengthMatch[1].trim() : 'Comprehensive content';
 
-      // Extract hashtags
-      const hashtagMatch = hashtagText.match(/HASHTAGS_START\s*([\s\S]*?)\s*HASHTAGS_END/);
-      const hashtagsText = hashtagMatch ? hashtagMatch[1].trim() : '';
-      const hashtags = hashtagsText.split('\n').map(tag => tag.trim().replace(/^#/, '')).filter(tag => tag.length > 0);
-
-      // Extract keywords
-      const keywordMatch = hashtagText.match(/KEYWORDS_START\s*([\s\S]*?)\s*KEYWORDS_END/);
+      const keywordMatch = keywordText.match(/KEYWORDS_START\s*([\s\S]*?)\s*KEYWORDS_END/);
       const keywordsText = keywordMatch ? keywordMatch[1].trim() : '';
-      const keywords = keywordsText.split('\n').map(keyword => keyword.trim()).filter(keyword => keyword.length > 0);
+      const keywords = keywordsText.split('\n').map(k => k.trim()).filter(k => k.length > 0);
 
       return {
         type: request.contentType,
         title,
         content,
-        hashtags: hashtags.length > 0 ? hashtags : ['বাংলা', 'কনটেন্ট', 'ভাইরাল'],
-        keywords: keywords.length > 0 ? keywords : ['বাংলা কনটেন্ট', 'সোশ্যাল মিডিয়া'],
-        engagementTips: engagementTips.length > 0 ? engagementTips : ['নিয়মিত পোস্ট করুন', 'অডিয়েন্সের সাথে ইন্টারঅ্যাক্ট করুন'],
-        estimatedReach
+        sections: sections.length > 0 ? sections : ['Introduction', 'Main Content', 'Conclusion'],
+        keywords: keywords.length > 0 ? keywords : ['Research', 'Study', 'Project'],
+        tips: tips.length > 0 ? tips : ['Plan thoroughly', 'Stay organized', 'Seek feedback'],
+        estimatedLength
       };
     } catch (error) {
       console.error('Error parsing response:', error);
-      throw new Error('রেসপন্স পার্স করতে সমস্যা হয়েছে');
+      throw new Error('Failed to parse generated content');
     }
   }
 
-  async getTrendingTopics(): Promise<string[]> {
+  async getSuggestedTopics(): Promise<string[]> {
     if (!this.genAI) {
       return [
-        'ডিজিটাল মার্কেটিং',
-        'অনলাইন আয়',
-        'স্বাস্থ্য টিপস',
-        'প্রযুক্তি নিউজ',
-        'ব্যবসায়িক কৌশল'
+        'Machine Learning Applications',
+        'Web Development Projects',
+        'Data Science Analysis',
+        'Mobile App Development',
+        'IoT Smart Systems',
+        'Blockchain Technology',
+        'Cloud Computing',
+        'Cybersecurity Solutions',
+        'AI Chatbot Development',
+        'E-commerce Platform'
       ];
     }
 
     const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `বাংলাদেশে এই মুহূর্তে ট্রেন্ডিং ১০টি টপিক দিন যা সোশ্যাল মিডিয়ায় ভাইরাল হতে পারে। শুধুমাত্র টপিকের নাম দিন, প্রতিটি নতুন লাইনে।`;
+    const prompt = `Suggest 10 trending and popular topics for student projects, research, and assignments in technology and academia. Only provide topic names, one per line.`;
 
     try {
       const result = await model.generateContent(prompt);
@@ -352,13 +339,13 @@ KEYWORDS_END`;
         .filter(topic => topic.length > 0)
         .slice(0, 10);
     } catch (error) {
-      console.error('Error getting trending topics:', error);
+      console.error('Error getting suggested topics:', error);
       return [
-        'ডিজিটাল মার্কেটিং',
-        'অনলাইন আয়',
-        'স্বাস্থ্য টিপস',
-        'প্রযুক্তি নিউজ',
-        'ব্যবসায়িক কৌশল'
+        'Machine Learning Applications',
+        'Web Development Projects',
+        'Data Science Analysis',
+        'Mobile App Development',
+        'IoT Smart Systems'
       ];
     }
   }
